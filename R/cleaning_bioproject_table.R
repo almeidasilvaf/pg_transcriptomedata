@@ -1,26 +1,17 @@
 
+library(here)
+library(tidyverse)
+
 #----Load plant ontology--------------------------------------------------------
 po <- readr::read_tsv("https://raw.githubusercontent.com/Planteome/plant-ontology/master/plant-ontology.txt",
                       skip = 1, show_col_types = FALSE)
 po <- po[!startsWith(po$defn, "OBSOLETE"), ]
 
 #----Load bioproject table------------------------------------------------------
-brassicaceae_path <- paste0(tempdir(), "/brassicaceae.rda")
-poaceae_path <- paste0(tempdir(), "/poaceae.rda")
-fabaceae_path <- paste0(tempdir(), "/fabaceae.rda")
-otherfam_path <- paste0(tempdir(), "/otherfam.rda")
-
-# Download files in tempdir()
-download.file("https://github.com/almeidasilvaf/plant_transcriptomes/blob/master/data/brassicaceae_projects.rda?raw=true", destfile = brassicaceae_path)
-download.file("https://github.com/almeidasilvaf/plant_transcriptomes/blob/master/data/poaceae_projects.rda?raw=true", destfile = poaceae_path)
-download.file("https://github.com/almeidasilvaf/plant_transcriptomes/blob/master/data/fabaceae_projects.rda?raw=true", destfile = fabaceae_path)
-download.file("https://github.com/almeidasilvaf/plant_transcriptomes/blob/master/data/otherfam_projects.rda?raw=true", destfile = otherfam_path)
-
-# Read files
-load(brassicaceae_path)
-load(fabaceae_path)
-load(poaceae_path)
-load(otherfam_path)
+load(here("data", "brassicaceae_projects.rda"))
+load(here("data", "fabaceae_projects.rda"))
+load(here("data", "poaceae_projects.rda"))
+load(here("data", "otherfam_projects.rda"))
 
 bioprojects <- bind_rows(
     brassicaceae_projects %>% dplyr::distinct(., .keep_all = TRUE),
@@ -40,7 +31,7 @@ check_tissue <- function(bp = NULL) {
     tissues <- table(bp$tissue_name)
     tissue_df <- data.frame(tissues)
     tissue_df <- tissue_df[order(tissue_df$Freq, decreasing = TRUE), ]
-    names(tissue_df)[1] <- "Tissue" 
+    names(tissue_df)[1] <- "Tissue"
     return(tissue_df)
 }
 
@@ -239,7 +230,7 @@ bp <- bioprojects %>%
           ".*[Ss]porophyte.*" = "whole plant (PO:0000003)"
         )
     )
-    ) 
+    )
 
 bp_po <- bp %>%
     filter(str_detect(tissue_name, "\\(PO")) %>%
@@ -251,7 +242,7 @@ bp_po <- bp %>%
     ungroup() %>%
     arrange(BioProject) %>%
     group_by(BioProject, Species) %>%
-    summarise(tissue_count = stringr::str_c(tissue_name, ": ", tissue_n, 
+    summarise(tissue_count = stringr::str_c(tissue_name, ": ", tissue_n,
                                             collapse = " | ")) %>%
     ungroup()
 
@@ -259,10 +250,10 @@ bp_po <- bp %>%
     select(BioProject, N, `Study title`, `Study abstract`, Pubmed, Species) %>%
     inner_join(., bp_po) %>%
     dplyr::rename(Tissue = tissue_count) %>%
-    select(BioProject, N, Tissue, 
+    select(BioProject, N, Tissue,
            `Study title`, `Study abstract`, Pubmed, Species) %>%
     distinct(., .keep_all = TRUE)
-    
+
 
 # Data frame of bioprojects containing poorly labeled tissues - set to NA
 bp_not_po <- bp %>%
@@ -272,7 +263,7 @@ bp_not_po <- bp %>%
     distinct(., .keep_all = TRUE) %>%
     dplyr::rename(Tissue = tissue_name)
 
-# Data frame of bioprojects that have NA in 'Tissue' 
+# Data frame of bioprojects that have NA in 'Tissue'
 # (they were discarded from bp_po and bp_not_po)
 bp_rest <- bioprojects[is.na(bioprojects$Tissue), ]
 
