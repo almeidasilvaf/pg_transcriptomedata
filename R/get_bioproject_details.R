@@ -1,13 +1,7 @@
+
 library(bears)
-library(collapse)
-options(collapse_mask = "manip") 
 
-download.file(
-    "https://github.com/almeidasilvaf/plantgenomes/blob/master/data/projects.rda?raw=true",
-    destfile = file.path(tempdir(), "projects.rda")
-)
-load(file.path(tempdir(), "projects.rda"))
-
+load(here("data", "projects.rda"))
 bioproject_ids <- unique(as.character(projects$BioProject))
 
 # Get bioproject info
@@ -15,7 +9,7 @@ get_bp_info <- function(ids = NULL) {
     detailed_bp <- Reduce(rbind, lapply(ids, function(x) {
         term <- paste0(x, "[GPRJ]")
         detail_df <- bears::create_sample_info(term, retmax = 1)
-        detail_df <- detail_df[, c("BioProject", "Instrument", 
+        detail_df <- detail_df[, c("BioProject", "Instrument",
                                    "Cultivar", "Date", "Origin")]
         return(detail_df)
     }))
@@ -24,7 +18,7 @@ get_bp_info <- function(ids = NULL) {
 
 # Repeat process in groups of 1000 projects to avoid losing everything for
 # connection issues
-chunk2 <- function(x,n) split(x, cut(seq_along(x), n, labels = FALSE)) 
+chunk2 <- function(x,n) split(x, cut(seq_along(x), n, labels = FALSE))
 
 ids <- chunk2(bioproject_ids, 10)
 bp1 <- get_bp_info(ids[[1]])
